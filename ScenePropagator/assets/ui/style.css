@@ -1,0 +1,111 @@
+body {
+  font-family: system-ui, sans-serif;
+  font-size: 14px;
+  margin: 0;
+  padding: 1em;
+  background: #f9f9f9;
+  color: #333;
+}
+
+h1, h2 {
+  margin-top: 1em;
+  font-size: 1.2em;
+  color: #444;
+}
+
+section {
+  margin-bottom: 1.2em;
+}
+
+label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.3em;
+}
+
+input[type="text"],
+select {
+  width: 100%;
+  padding: 0.4em;
+  margin-bottom: 0.5em;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  margin: 0.2em 0;
+}
+
+#scene-list,
+#checkboxes,
+.log-panel {
+  border: 1px solid #ddd;
+  background: #fff;
+  padding: 0.5em;
+  border-radius: 4px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.scrollbox {
+  overflow-y: auto;
+}
+
+button {
+  background-color: #0077cc;
+  border: none;
+  color: white;
+  padding: 0.5em 1em;
+  margin: 0.2em;
+  font-size: 13px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #005fa3;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em;
+  margin-top: 1em;
+}
+
+.scene-buttons {
+  display: flex;
+  gap: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+.log-entry {
+  background: #eef;
+  padding: 0.4em;
+  border-left: 4px solid #77c;
+  margin-bottom: 0.4em;
+  border-radius: 3px;
+}
+
+.log-entry ul {
+  margin: 0.3em 0 0 1em;
+  padding-left: 0;
+}
+
+@media (max-width: 600px) {
+  body {
+    font-size: 13px;
+    padding: 0.5em;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  button {
+    width: 100%;
+  }
+}

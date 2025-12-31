@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Scene Propagator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1 id="title">Scene Propagator</h1>
+  </header>
+
+  <main>
+    <section>
+      <label for="source-scene" id="label-source">Source Scene</label>
+      <select id="source-scene"></select>
+    </section>
+
+    <section>
+      <label id="label-targets">Target Scenes</label>
+      <input type="text" id="filter-scenes" placeholder="Filter scenes..." />
+      <div class="scene-buttons">
+        <button id="select-all">All</button>
+        <button id="select-none">None</button>
+        <button id="invert-selection">Invert</button>
+      </div>
+      <div id="scene-list" class="scrollbox"></div>
+    </section>
+
+    <section>
+      <label id="label-scope">Copy Scope</label>
+      <div id="checkboxes"></div>
+    </section>
+
+    <section>
+      <label for="preset" id="label-preset">Preset</label>
+      <select id="preset"></select>
+      <button id="save-preset">💾</button>
+    </section>
+
+    <section class="actions">
+      <button id="preview-btn">🔍 Preview</button>
+      <button id="apply-btn">✅ Apply</button>
+      <button id="cancel-btn">❌ Cancel</button>
+    </section>
+
+    <section>
+      <h2 id="log-title">Execution Log</h2>
+      <div id="log-output" class="log-panel scrollbox"></div>
+      <label for="log-format">Export</label>
+      <select id="log-format">
+        <option value="json">JSON</option>
+        <option value="csv">CSV</option>
+      </select>
+      <button id="export-log">📤</button>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
