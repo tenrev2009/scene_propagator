@@ -15,6 +15,10 @@ Contrairement à l'outil natif, cette extension permet une **propagation granula
   - ☀️ **Ombres :** Date, heure, et paramètres d'affichage.
   - ✂️ **Coupes :** Plans de coupe actifs.
   - 🧭 **Axes :** Position des axes personnalisés.
+- **Gestion des scènes :**
+  - ✏️ **Renommer** une scène existante directement depuis l'interface.
+  - ➕ **Créer** de nouvelles scènes en lot (nombre désiré) avec **préfixe** et **suffixe** optionnels.
+  - 🎯 Les nouvelles scènes peuvent **hériter des propriétés d'une scène source** (caméra, style, ombres, calques…).
 - **Préréglages (Presets) :** Enregistrez vos configurations favorites (ex: "Tout copier", "Juste la caméra").
 - **Aperçu (Diff) :** Visualisez les différences avant d'appliquer (expérimental).
 - **Journal d’exécution :** Log détaillé exportable en `.json` ou `.csv` pour le débogage.

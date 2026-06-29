@@ -35,6 +35,8 @@ en:
       custom: "Custom"
   messages:
     success_applied: "%{count} scenes updated."
+    scene_renamed: "Scene renamed to '%{name}'."
+    scenes_created: "%{count} scene(s) created."
     no_scene: "No scene found in the model."
     same_scene_skipped: "Source and target scene are the same. Skipped."
     error_propagation: "An error occurred during propagation."

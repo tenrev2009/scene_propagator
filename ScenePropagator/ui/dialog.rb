@@ -65,6 +65,17 @@ module ScenePropagator
       @dialog.add_action_callback('sp_save_preset') do |_ctx, payload|
         data = JSON.parse(payload, symbolize_names: true)
         @presets.save_preset(data[:name], data[:options])
+        @dialog.execute_script("SPBridge.refreshPresets(#{@presets.list_presets.to_json})")
+      end
+
+      @dialog.add_action_callback('sp_rename_scene') do |_ctx, payload|
+        data = JSON.parse(payload, symbolize_names: true)
+        rename_scene(data[:old_name], data[:new_name])
+      end
+
+      @dialog.add_action_callback('sp_create_scenes') do |_ctx, payload|
+        data = JSON.parse(payload, symbolize_names: true)
+        create_scenes(data)
       end
     end
 
@@ -108,10 +119,46 @@ module ScenePropagator
       source  = @pages.find { |p| p.name == source_name }
       targets = @pages.select { |p| target_names.include?(p.name) }
 
-      diff_service = DiffService.new(@model, options)
+      diff_service = DiffService.new(@model, options, @logger)
       diff = diff_service.compute_diff(source, targets)
 
       @dialog.execute_script("SPBridge.renderDiff(#{diff.to_json})")
+    end
+
+    def rename_scene(old_name, new_name)
+      manager    = SceneManager.new(@model, @logger)
+      final_name = manager.rename_scene(old_name, new_name)
+      @pages     = @model.pages.to_a
+      refresh_scenes
+      msg = I18n.t('messages.scene_renamed').gsub('%{name}', final_name)
+      @dialog.execute_script("SPBridge.showSuccess(#{msg.to_json})")
+    rescue => e
+      @logger.error("Rename failed: #{e.class}: #{e.message}")
+      @dialog.execute_script("SPBridge.showError(#{e.message.to_json})")
+    end
+
+    def create_scenes(data)
+      manager = SceneManager.new(@model, @logger)
+      created = manager.create_scenes(
+        count:       data[:count],
+        base_name:   data[:base_name],
+        prefix:      data[:prefix],
+        suffix:      data[:suffix],
+        source_name: data[:source],
+        copy_source: data[:copy_source]
+      )
+      @pages = @model.pages.to_a
+      refresh_scenes
+      msg = I18n.t('messages.scenes_created').gsub('%{count}', created.size.to_s)
+      @dialog.execute_script("SPBridge.showSuccess(#{msg.to_json})")
+    rescue => e
+      @logger.error("Create scenes failed: #{e.class}: #{e.message}")
+      @dialog.execute_script("SPBridge.showError(#{e.message.to_json})")
+    end
+
+    def refresh_scenes
+      scenes_data = @pages.map { |p| { name: p.name } }
+      @dialog.execute_script("SPBridge.refreshScenes(#{scenes_data.to_json})")
     end
 
     def export_log(format)
