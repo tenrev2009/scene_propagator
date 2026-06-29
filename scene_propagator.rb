@@ -16,6 +16,7 @@ module ScenePropagator
     require_relative 'ScenePropagator/infra/i18n'
     require_relative 'ScenePropagator/core/copy_service'
     require_relative 'ScenePropagator/core/diff_service'
+    require_relative 'ScenePropagator/core/scene_manager'
     require_relative 'ScenePropagator/core/presets'
     require_relative 'ScenePropagator/ui/dialog'
 

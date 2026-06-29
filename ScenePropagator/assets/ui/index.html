@@ -45,6 +45,33 @@
       <button id="cancel-btn">❌ Cancel</button>
     </section>
 
+    <section class="manage">
+      <h2 id="manage-title">Manage Scenes</h2>
+
+      <div class="manage-block">
+        <label id="label-rename">Rename a scene</label>
+        <select id="rename-select"></select>
+        <input type="text" id="rename-input" placeholder="New name..." />
+        <button id="rename-btn">✏️ Rename</button>
+      </div>
+
+      <div class="manage-block">
+        <label id="label-create">Create new scenes</label>
+        <input type="text" id="create-base" placeholder="Base name (optional)" />
+        <div class="inline-fields">
+          <input type="text" id="create-prefix" placeholder="Prefix" />
+          <input type="text" id="create-suffix" placeholder="Suffix" />
+          <input type="number" id="create-count" min="1" value="1" title="How many" />
+        </div>
+        <label class="checkbox-label">
+          <input type="checkbox" id="create-copy-source" />
+          <span id="label-copy-source">Copy properties from a source scene</span>
+        </label>
+        <select id="create-source-select" disabled></select>
+        <button id="create-btn">➕ Create scenes</button>
+      </div>
+    </section>
+
     <section>
       <h2 id="log-title">Execution Log</h2>
       <div id="log-output" class="log-panel scrollbox"></div>

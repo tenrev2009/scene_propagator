@@ -82,6 +82,35 @@ button:hover {
   margin-bottom: 0.5em;
 }
 
+.manage {
+  border-top: 1px solid #ddd;
+  padding-top: 0.8em;
+}
+
+.manage-block {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 0.6em;
+  margin-bottom: 0.8em;
+}
+
+.inline-fields {
+  display: flex;
+  gap: 0.5em;
+}
+
+.inline-fields input[type="text"] {
+  flex: 1;
+}
+
+.inline-fields input[type="number"] {
+  width: 70px;
+  padding: 0.4em;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
 .log-entry {
   background: #eef;
   padding: 0.4em;

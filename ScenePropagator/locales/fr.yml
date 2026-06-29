@@ -35,6 +35,8 @@ fr:
       custom: "Personnalisé"
   messages:
     success_applied: "%{count} scènes mises à jour."
+    scene_renamed: "Scène renommée en '%{name}'."
+    scenes_created: "%{count} scène(s) créée(s)."
     no_scene: "Aucune scène trouvée dans le modèle."
     same_scene_skipped: "Scène source et cible identique. Ignorée."
     error_propagation: "Une erreur est survenue durant la propagation."

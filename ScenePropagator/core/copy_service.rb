@@ -16,12 +16,17 @@ module ScenePropagator
 
       # 1. Save original context
       original_page = @pages.selected_page
-      
+
+      # Disable scene transitions so switching pages applies instantly.
+      # Otherwise SketchUp animates the camera and page.update would capture
+      # an intermediate (wrong) view state -> inconsistent propagation.
+      disable_transitions
+
       @model.start_operation('Propagate Scenes', true)
-      
+
       begin
         # 2. ACTIVATE SOURCE
-        # We must switch to the source scene so SketchUp loads 
+        # We must switch to the source scene so SketchUp loads
         # the correct hidden objects, style overrides, and active section planes.
         if @pages.selected_page != source_page
           @pages.selected_page = source_page
@@ -45,10 +50,31 @@ module ScenePropagator
         if original_page && original_page.valid?
           @pages.selected_page = original_page
         end
+        restore_transitions
       end
     end
 
     private
+
+    def disable_transitions
+      opts = @model.options['PageOptions']
+      return unless opts
+      @prev_show_transition = opts['ShowTransition']
+      @prev_transition_time = opts['TransitionTime']
+      opts['ShowTransition'] = false
+      opts['TransitionTime'] = 0.0
+    rescue => e
+      @logger.warn("Could not disable transitions: #{e.message}")
+    end
+
+    def restore_transitions
+      opts = @model.options['PageOptions']
+      return unless opts
+      opts['ShowTransition'] = @prev_show_transition unless @prev_show_transition.nil?
+      opts['TransitionTime'] = @prev_transition_time unless @prev_transition_time.nil?
+    rescue => e
+      @logger.warn("Could not restore transitions: #{e.message}")
+    end
 
     def copy_properties_with_view_context(src, dst)
       # --- A. TAGS (LAYERS) ---
