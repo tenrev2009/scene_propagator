@@ -36,9 +36,23 @@ Contrairement à l'outil natif, cette extension permet une **propagation granula
 
 ## 📦 Installation
 
-1. Téléchargez le fichier `.rbz`.
-2. Dans SketchUp : `Fenêtre` → `Gestionnaire d'extensions` → `Installer une extension`.
-3. Sélectionnez le fichier `.rbz`.
+Ce dépôt contient les sources du plugin ; aucun `.rbz` n'y est publié directement. Deux façons de l'installer :
+
+### Option A — Construire le `.rbz` soi-même
+
+```bash
+./build_rbz.sh
+```
+
+Le fichier est généré dans `dist/scene_propagator-<version>.rbz`. Ensuite, dans SketchUp :
+`Fenêtre` → `Gestionnaire d'extensions` → `Installer une extension` → sélectionnez ce fichier.
+
+### Option B — Installation manuelle depuis les sources
+
+1. Copiez `scene_propagator.rb` et le dossier `ScenePropagator/` dans le dossier `Plugins` de SketchUp :
+   - Windows : `%APPDATA%\SketchUp\SketchUp <version>\SketchUp\Plugins`
+   - macOS : `~/Library/Application Support/SketchUp <version>/SketchUp/Plugins`
+2. Relancez SketchUp.
 
 ## 🖥️ Compatibilité
 
