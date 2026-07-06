@@ -1,5 +1,6 @@
 # ScenePropagator/ui/dialog.rb
 require 'json'
+require 'csv'
 require 'sketchup.rb'
 
 module ScenePropagator
@@ -77,6 +78,20 @@ module ScenePropagator
         data = JSON.parse(payload, symbolize_names: true)
         create_scenes(data)
       end
+
+      @dialog.add_action_callback('sp_rename_scenes_bulk') do |_ctx, payload|
+        data = JSON.parse(payload, symbolize_names: true)
+        rename_scenes_bulk(data)
+      end
+
+      @dialog.add_action_callback('sp_export_scene_names') do |_ctx, _payload|
+        export_scene_names
+      end
+
+      @dialog.add_action_callback('sp_import_scene_names') do |_ctx, payload|
+        data = JSON.parse(payload, symbolize_names: true)
+        import_scene_names(data[:names])
+      end
     end
 
     def populate_initial_data
@@ -140,12 +155,14 @@ module ScenePropagator
     def create_scenes(data)
       manager = SceneManager.new(@model, @logger)
       created = manager.create_scenes(
-        count:       data[:count],
-        base_name:   data[:base_name],
-        prefix:      data[:prefix],
-        suffix:      data[:suffix],
-        source_name: data[:source],
-        copy_source: data[:copy_source]
+        count:        data[:count],
+        base_name:    data[:base_name],
+        prefix:       data[:prefix],
+        suffix:       data[:suffix],
+        start_index:  data[:start_index],
+        source_name:  data[:source],
+        copy_source:  data[:copy_source],
+        insert_after: data[:insert_after]
       )
       @pages = @model.pages.to_a
       refresh_scenes
@@ -153,6 +170,48 @@ module ScenePropagator
       @dialog.execute_script("SPBridge.showSuccess(#{msg.to_json})")
     rescue => e
       @logger.error("Create scenes failed: #{e.class}: #{e.message}")
+      @dialog.execute_script("SPBridge.showError(#{e.message.to_json})")
+    end
+
+    def rename_scenes_bulk(data)
+      manager = SceneManager.new(@model, @logger)
+      renamed = manager.rename_scenes_bulk(
+        names_in_order: data[:names],
+        base_name:      data[:base_name],
+        prefix:         data[:prefix],
+        suffix:         data[:suffix],
+        start_index:    data[:start_index]
+      )
+      @pages = @model.pages.to_a
+      refresh_scenes
+      msg = I18n.t('messages.scenes_renamed_bulk').gsub('%{count}', renamed.size.to_s)
+      @dialog.execute_script("SPBridge.showSuccess(#{msg.to_json})")
+    rescue => e
+      @logger.error("Bulk rename failed: #{e.class}: #{e.message}")
+      @dialog.execute_script("SPBridge.showError(#{e.message.to_json})")
+    end
+
+    def export_scene_names
+      manager = SceneManager.new(@model, @logger)
+      names = manager.scene_names
+      csv = CSV.generate { |c| names.each { |n| c << [n] } }
+      @dialog.execute_script("SPBridge.downloadLog('scene_names.csv', #{csv.to_json})")
+    rescue => e
+      @logger.error("Export scene names failed: #{e.class}: #{e.message}")
+    end
+
+    def import_scene_names(names)
+      manager = SceneManager.new(@model, @logger)
+      result  = manager.import_scene_names(names)
+      @pages  = @model.pages.to_a
+      refresh_scenes
+      msg = I18n.t('messages.scenes_imported')
+               .gsub('%{renamed}', result[:renamed].to_s)
+               .gsub('%{csv}', result[:csv_count].to_s)
+               .gsub('%{existing}', result[:existing_count].to_s)
+      @dialog.execute_script("SPBridge.showSuccess(#{msg.to_json})")
+    rescue => e
+      @logger.error("Import scene names failed: #{e.class}: #{e.message}")
       @dialog.execute_script("SPBridge.showError(#{e.message.to_json})")
     end
 

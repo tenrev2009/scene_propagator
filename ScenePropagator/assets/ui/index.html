@@ -57,18 +57,43 @@
 
       <div class="manage-block">
         <label id="label-create">Create new scenes</label>
-        <input type="text" id="create-base" placeholder="Base name (optional)" />
+        <input type="text" id="create-base" placeholder="Base name (e.g. -)" />
         <div class="inline-fields">
           <input type="text" id="create-prefix" placeholder="Prefix" />
           <input type="text" id="create-suffix" placeholder="Suffix" />
           <input type="number" id="create-count" min="1" value="1" title="How many" />
+          <input type="number" id="create-start-index" min="1" value="1" title="Start index" />
         </div>
+        <label id="label-insert-after">Insert after</label>
+        <select id="create-insert-after"></select>
+        <div id="create-preview" class="preview-text"></div>
         <label class="checkbox-label">
           <input type="checkbox" id="create-copy-source" />
           <span id="label-copy-source">Copy properties from a source scene</span>
         </label>
         <select id="create-source-select" disabled></select>
         <button id="create-btn">➕ Create scenes</button>
+      </div>
+
+      <div class="manage-block">
+        <label id="label-bulk-rename">Rename selected scenes (checked above)</label>
+        <input type="text" id="bulk-base" placeholder="Base name (e.g. -)" />
+        <div class="inline-fields">
+          <input type="text" id="bulk-prefix" placeholder="Prefix" />
+          <input type="text" id="bulk-suffix" placeholder="Suffix" />
+          <input type="number" id="bulk-start-index" min="1" value="1" title="Start index" />
+        </div>
+        <div id="bulk-preview" class="preview-text"></div>
+        <button id="bulk-rename-btn">🔁 Rename selection</button>
+      </div>
+
+      <div class="manage-block">
+        <label id="label-csv">Export / Import scene names (CSV)</label>
+        <div class="inline-fields">
+          <button id="export-names-btn">📤 Export CSV</button>
+          <input type="file" id="import-names-file" accept=".csv" />
+        </div>
+        <button id="import-names-btn">📥 Import CSV</button>
       </div>
     </section>
 

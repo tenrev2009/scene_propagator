@@ -37,6 +37,8 @@ fr:
     success_applied: "%{count} scènes mises à jour."
     scene_renamed: "Scène renommée en '%{name}'."
     scenes_created: "%{count} scène(s) créée(s)."
+    scenes_renamed_bulk: "%{count} scène(s) renommée(s) en groupe."
+    scenes_imported: "%{renamed} scène(s) renommée(s) depuis le CSV (%{csv} nom(s) importé(s), %{existing} scène(s) existante(s))."
     no_scene: "Aucune scène trouvée dans le modèle."
     same_scene_skipped: "Scène source et cible identique. Ignorée."
     error_propagation: "Une erreur est survenue durant la propagation."
