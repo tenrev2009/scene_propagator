@@ -25,11 +25,23 @@ const SPBridge = (() => {
         rename_btn: "Rename",
         rename_placeholder: "New name...",
         create_label: "Create new scenes",
-        create_base: "Base name (optional)",
+        create_base: "Base name (e.g. -)",
         create_prefix: "Prefix",
         create_suffix: "Suffix",
         copy_source: "Copy properties from a source scene",
-        create_btn: "Create scenes"
+        create_btn: "Create scenes",
+        insert_after: "Insert after",
+        insert_after_end: "— End of list —",
+        preview_prefix: "Preview: ",
+        bulk_rename_label: "Rename selected scenes (checked above)",
+        bulk_rename_btn: "Rename selection",
+        bulk_rename_none: "No scene selected",
+        csv_label: "Export / Import scene names (CSV)",
+        export_csv_btn: "Export CSV",
+        import_csv_btn: "Import CSV",
+        csv_no_file: "Please choose a CSV file first.",
+        csv_empty: "The CSV file contains no names.",
+        csv_mismatch: "The CSV file contains %{csv} name(s) but there are %{existing} scene(s). Only the first %{min} will be renamed. Continue?"
       },
       fr: {
         title: "Propagateur de Scènes",
@@ -50,11 +62,23 @@ const SPBridge = (() => {
         rename_btn: "Renommer",
         rename_placeholder: "Nouveau nom...",
         create_label: "Créer de nouvelles scènes",
-        create_base: "Nom de base (optionnel)",
+        create_base: "Nom de base (ex: -)",
         create_prefix: "Préfixe",
         create_suffix: "Suffixe",
         copy_source: "Copier les propriétés d'une scène source",
-        create_btn: "Créer les scènes"
+        create_btn: "Créer les scènes",
+        insert_after: "Insérer après",
+        insert_after_end: "— Fin de la liste —",
+        preview_prefix: "Aperçu : ",
+        bulk_rename_label: "Renommer les scènes sélectionnées (cochées ci-dessus)",
+        bulk_rename_btn: "Renommer la sélection",
+        bulk_rename_none: "Aucune scène sélectionnée",
+        csv_label: "Export / Import des noms de scènes (CSV)",
+        export_csv_btn: "Exporter en CSV",
+        import_csv_btn: "Importer un CSV",
+        csv_no_file: "Choisissez d'abord un fichier CSV.",
+        csv_empty: "Le fichier CSV ne contient aucun nom.",
+        csv_mismatch: "Le fichier CSV contient %{csv} nom(s) mais il y a %{existing} scène(s). Seules les %{min} premières correspondances seront renommées. Continuer ?"
       }
     }[loc] || {};
   }
@@ -85,6 +109,14 @@ const SPBridge = (() => {
     document.getElementById('create-suffix').placeholder = translations.create_suffix || 'Suffix';
     document.getElementById('label-copy-source').textContent = translations.copy_source || 'Copy properties from a source scene';
     document.getElementById('create-btn').textContent = `➕ ${translations.create_btn || 'Create scenes'}`;
+    document.getElementById('label-insert-after').textContent = translations.insert_after || 'Insert after';
+
+    document.getElementById('label-bulk-rename').textContent = translations.bulk_rename_label || 'Rename selected scenes (checked above)';
+    document.getElementById('bulk-rename-btn').textContent = `🔁 ${translations.bulk_rename_btn || 'Rename selection'}`;
+
+    document.getElementById('label-csv').textContent = translations.csv_label || 'Export / Import scene names (CSV)';
+    document.getElementById('export-names-btn').textContent = `📤 ${translations.export_csv_btn || 'Export CSV'}`;
+    document.getElementById('import-names-btn').textContent = `📥 ${translations.import_csv_btn || 'Import CSV'}`;
   }
 
   function fillSelect(select, names, selectedName) {
@@ -100,6 +132,21 @@ const SPBridge = (() => {
     }
   }
 
+  function fillSelectWithBlank(select, names, blankLabel, selectedValue) {
+    select.innerHTML = '';
+    const blankOpt = document.createElement('option');
+    blankOpt.value = '';
+    blankOpt.text = blankLabel;
+    select.add(blankOpt);
+    names.forEach(name => {
+      const opt = document.createElement('option');
+      opt.text = name;
+      opt.value = name;
+      select.add(opt);
+    });
+    select.value = (selectedValue && names.includes(selectedValue)) ? selectedValue : '';
+  }
+
   function populateScenes(scenesList, preserve) {
     preserve = preserve || {};
     const names = scenesList.map(s => s.name);
@@ -108,10 +155,12 @@ const SPBridge = (() => {
     const sceneListDiv = document.getElementById('scene-list');
     const renameSelect = document.getElementById('rename-select');
     const createSource = document.getElementById('create-source-select');
+    const insertAfter = document.getElementById('create-insert-after');
 
     fillSelect(sourceSelect, names, preserve.source);
     fillSelect(renameSelect, names, preserve.rename);
     fillSelect(createSource, names, preserve.createSource);
+    fillSelectWithBlank(insertAfter, names, translations.insert_after_end || '— End of list —', preserve.insertAfter);
 
     const checkedSet = preserve.targets || new Set();
     sceneListDiv.innerHTML = '';
@@ -129,6 +178,8 @@ const SPBridge = (() => {
       label.appendChild(document.createTextNode(scene.name));
       sceneListDiv.appendChild(label);
     });
+
+    updateBulkPreview();
   }
 
   function refreshScenes(scenesList) {
@@ -137,6 +188,7 @@ const SPBridge = (() => {
       source: document.getElementById('source-scene').value,
       rename: document.getElementById('rename-select').value,
       createSource: document.getElementById('create-source-select').value,
+      insertAfter: document.getElementById('create-insert-after').value,
       targets: new Set(getSelectedTargets())
     };
     populateScenes(scenes, preserve);
@@ -199,8 +251,70 @@ const SPBridge = (() => {
     });
   }
 
+  // ==== Indexed naming scheme: prefix + index + base + suffix + index ====
+  // Mirrors ScenePropagator::SceneManager#format_indexed_name (Ruby side).
+  // Only used here for a live preview; the server resolves real uniqueness.
+  function padWidthFor(startIndex, count) {
+    const maxIdx = startIndex + Math.max(count, 1) - 1;
+    return Math.max(2, String(maxIdx).length);
+  }
+
+  function formatIndexedName(prefix, base, suffix, index, padW) {
+    const padded = String(index).padStart(padW, '0');
+    if (!prefix && !base && !suffix) {
+      return `Scene${padded}`;
+    }
+    return `${prefix}${padded}${base}${suffix}${padded}`;
+  }
+
+  function computePreview(prefix, base, suffix, startIndex, count) {
+    if (count < 1) { return ''; }
+    const padW = padWidthFor(startIndex, count);
+    const first = formatIndexedName(prefix, base, suffix, startIndex, padW);
+    if (count === 1) { return first; }
+    const last = formatIndexedName(prefix, base, suffix, startIndex + count - 1, padW);
+    return `${first} → ${last}`;
+  }
+
+  function updateCreatePreview() {
+    const prefix = document.getElementById('create-prefix').value;
+    const base = document.getElementById('create-base').value;
+    const suffix = document.getElementById('create-suffix').value;
+    const startIndex = parseInt(document.getElementById('create-start-index').value, 10) || 1;
+    const count = parseInt(document.getElementById('create-count').value, 10) || 1;
+    const preview = computePreview(prefix, base, suffix, startIndex, count);
+    document.getElementById('create-preview').textContent = (translations.preview_prefix || 'Preview: ') + preview;
+  }
+
+  function updateBulkPreview() {
+    const count = getSelectedTargets().length;
+    const el = document.getElementById('bulk-preview');
+    if (count === 0) {
+      el.textContent = translations.bulk_rename_none || 'No scene selected';
+      return;
+    }
+    const prefix = document.getElementById('bulk-prefix').value;
+    const base = document.getElementById('bulk-base').value;
+    const suffix = document.getElementById('bulk-suffix').value;
+    const startIndex = parseInt(document.getElementById('bulk-start-index').value, 10) || 1;
+    const preview = computePreview(prefix, base, suffix, startIndex, count);
+    el.textContent = (translations.preview_prefix || 'Preview: ') + preview;
+  }
+
+  // ==== CSV helpers ====
+  function parseCsvNames(text) {
+    const lines = text.split(/\r\n|\r|\n/).map(l => l.trim()).filter(l => l.length > 0);
+    if (lines.length && /^name$/i.test(lines[0].replace(/^"|"$/g, ''))) {
+      lines.shift();
+    }
+    return lines.map(line => {
+      const firstField = line.split(',')[0];
+      return firstField.replace(/^"|"$/g, '').trim();
+    });
+  }
+
   function wireManageEvents() {
-    // Rename
+    // Rename (single scene)
     document.getElementById('rename-btn').addEventListener('click', () => {
       const oldName = document.getElementById('rename-select').value;
       const newName = document.getElementById('rename-input').value.trim();
@@ -224,12 +338,82 @@ const SPBridge = (() => {
         prefix: document.getElementById('create-prefix').value,
         suffix: document.getElementById('create-suffix').value,
         count: parseInt(document.getElementById('create-count').value, 10) || 1,
+        start_index: parseInt(document.getElementById('create-start-index').value, 10) || 1,
+        insert_after: document.getElementById('create-insert-after').value || null,
         copy_source: copyCheckbox.checked,
         source: createSource.value
       };
       if (window.sketchup && window.sketchup.sp_create_scenes) {
         window.sketchup.sp_create_scenes(JSON.stringify(payload));
       }
+    });
+
+    ['create-prefix', 'create-base', 'create-suffix', 'create-count', 'create-start-index'].forEach(id => {
+      document.getElementById(id).addEventListener('input', updateCreatePreview);
+    });
+    updateCreatePreview();
+
+    // Bulk rename (uses the Target Scenes checkboxes above as the selection)
+    document.getElementById('bulk-rename-btn').addEventListener('click', () => {
+      const names = getSelectedTargets();
+      if (names.length === 0) { return; }
+      const payload = {
+        names,
+        base_name: document.getElementById('bulk-base').value,
+        prefix: document.getElementById('bulk-prefix').value,
+        suffix: document.getElementById('bulk-suffix').value,
+        start_index: parseInt(document.getElementById('bulk-start-index').value, 10) || 1
+      };
+      if (window.sketchup && window.sketchup.sp_rename_scenes_bulk) {
+        window.sketchup.sp_rename_scenes_bulk(JSON.stringify(payload));
+      }
+    });
+
+    ['bulk-prefix', 'bulk-base', 'bulk-suffix', 'bulk-start-index'].forEach(id => {
+      document.getElementById(id).addEventListener('input', updateBulkPreview);
+    });
+    document.getElementById('scene-list').addEventListener('change', updateBulkPreview);
+    document.getElementById('select-all').addEventListener('click', updateBulkPreview);
+    document.getElementById('select-none').addEventListener('click', updateBulkPreview);
+    document.getElementById('invert-selection').addEventListener('click', updateBulkPreview);
+
+    // Export scene names to CSV
+    document.getElementById('export-names-btn').addEventListener('click', () => {
+      if (window.sketchup && window.sketchup.sp_export_scene_names) {
+        window.sketchup.sp_export_scene_names('');
+      }
+    });
+
+    // Import scene names from CSV
+    document.getElementById('import-names-btn').addEventListener('click', () => {
+      const fileInput = document.getElementById('import-names-file');
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) {
+        alert(translations.csv_no_file || 'Please choose a CSV file first.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const names = parseCsvNames(String(reader.result));
+        if (names.length === 0) {
+          alert(translations.csv_empty || 'The CSV file contains no names.');
+          return;
+        }
+        const existingCount = scenes.length;
+        if (names.length !== existingCount) {
+          const template = translations.csv_mismatch ||
+            'The CSV file contains %{csv} name(s) but there are %{existing} scene(s). Only the first %{min} will be renamed. Continue?';
+          const msg = template
+            .replace('%{csv}', names.length)
+            .replace('%{existing}', existingCount)
+            .replace('%{min}', Math.min(names.length, existingCount));
+          if (!confirm(msg)) { return; }
+        }
+        if (window.sketchup && window.sketchup.sp_import_scene_names) {
+          window.sketchup.sp_import_scene_names(JSON.stringify({ names }));
+        }
+      };
+      reader.readAsText(file);
     });
   }
 
