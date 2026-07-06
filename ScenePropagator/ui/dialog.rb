@@ -155,14 +155,19 @@ module ScenePropagator
     def create_scenes(data)
       manager = SceneManager.new(@model, @logger)
       created = manager.create_scenes(
-        count:        data[:count],
-        base_name:    data[:base_name],
-        prefix:       data[:prefix],
-        suffix:       data[:suffix],
-        start_index:  data[:start_index],
-        source_name:  data[:source],
-        copy_source:  data[:copy_source],
-        insert_after: data[:insert_after]
+        count:            data[:count],
+        base_name:        data[:base_name],
+        prefix:           data[:prefix],
+        suffix:           data[:suffix],
+        prefix_index:     data[:prefix_index],
+        suffix_index:     data[:suffix_index],
+        prefix_increment: data[:prefix_increment],
+        suffix_increment: data[:suffix_increment],
+        prefix_step:      data[:prefix_step],
+        suffix_step:      data[:suffix_step],
+        source_name:      data[:source],
+        copy_source:      data[:copy_source],
+        insert_after:     data[:insert_after]
       )
       @pages = @model.pages.to_a
       refresh_scenes
@@ -176,11 +181,16 @@ module ScenePropagator
     def rename_scenes_bulk(data)
       manager = SceneManager.new(@model, @logger)
       renamed = manager.rename_scenes_bulk(
-        names_in_order: data[:names],
-        base_name:      data[:base_name],
-        prefix:         data[:prefix],
-        suffix:         data[:suffix],
-        start_index:    data[:start_index]
+        names_in_order:   data[:names],
+        base_name:        data[:base_name],
+        prefix:           data[:prefix],
+        suffix:           data[:suffix],
+        prefix_index:     data[:prefix_index],
+        suffix_index:     data[:suffix_index],
+        prefix_increment: data[:prefix_increment],
+        suffix_increment: data[:suffix_increment],
+        prefix_step:      data[:prefix_step],
+        suffix_step:      data[:suffix_step]
       )
       @pages = @model.pages.to_a
       refresh_scenes

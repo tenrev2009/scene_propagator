@@ -43,31 +43,41 @@ module ScenePropagator
 
     # Create one or more scenes.
     #
-    # Naming scheme: prefix + index + base + suffix + index, e.g. with
-    # base_name: "-", prefix: "toto", suffix: "c" and start_index: 1,
-    # scenes are named "toto01-c01", "toto02-c02", ...
+    # Name structure: prefix + prefix_index + base_name + suffix + suffix_index
+    #
+    # Each index is given as text: its literal form defines the zero-padding
+    # ("0" -> 0,1,2..., "01" -> 01,02,03...). Each index can be incremented or
+    # not (fixed), with a configurable step (1, 2, ...). An empty index field
+    # inserts nothing.
+    #
+    # Example: base "toto", prefix "cc", suffix "dd", prefix_index "01",
+    # suffix_index "01" -> cc01totodd01, cc02totodd02, cc03totodd03...
     #
     # Options:
-    #   count        - how many scenes to create (>= 1)
-    #   base_name    - literal text placed between the two indexed parts
-    #   prefix       - text prepended before the first index
-    #   suffix       - text placed between base and the second index
-    #   start_index  - first index value (default 1)
-    #   source_name  - name of the scene whose properties should be inherited
-    #   copy_source  - when true, new scenes inherit source properties
-    #   insert_after - name of an existing scene after which the new
-    #                  sequence should be inserted (nil = append at the end)
+    #   count            - how many scenes to create (>= 1)
+    #   base_name        - scene name (middle part)
+    #   prefix           - text before the prefix index
+    #   suffix           - text after base_name, before the suffix index
+    #   prefix_index     - starting index after prefix (text, may be '')
+    #   suffix_index     - starting index after suffix (text, may be '')
+    #   prefix_increment - whether the prefix index increments (default true)
+    #   suffix_increment - whether the suffix index increments (default true)
+    #   prefix_step      - increment step for the prefix index (default 1)
+    #   suffix_step      - increment step for the suffix index (default 1)
+    #   source_name      - name of the scene whose properties are inherited
+    #   copy_source      - when true, new scenes inherit source properties
+    #   insert_after     - name of an existing scene after which the new
+    #                      sequence is inserted (nil = append at the end)
     #
     # Returns the array of created scene names, in order.
-    def create_scenes(count:, base_name: '', prefix: '', suffix: '', start_index: 1,
+    def create_scenes(count:, base_name: '', prefix: '', suffix: '',
+                       prefix_index: '', suffix_index: '',
+                       prefix_increment: true, suffix_increment: true,
+                       prefix_step: 1, suffix_step: 1,
                        source_name: nil, copy_source: false, insert_after: nil)
       count = count.to_i
       count = 1 if count < 1
       count = MAX_SCENES_AT_ONCE if count > MAX_SCENES_AT_ONCE
-
-      start_index = start_index.to_i
-      start_index = 1 if start_index < 1
-      pad_width = [2, (start_index + count - 1).to_s.length].max
 
       source = copy_source && source_name ? find_page(source_name) : nil
       if copy_source && source_name && source.nil?
@@ -89,9 +99,11 @@ module ScenePropagator
         @pages.selected_page = source if source
 
         count.times do |i|
-          idx  = start_index + i
-          name = unique_name(format_indexed_name(prefix, base_name, suffix, idx, pad_width))
-          page = add_page_at(name, insert_index)
+          name = compose_name(
+            prefix, prefix_index, base_name, suffix, suffix_index,
+            i, prefix_increment, suffix_increment, prefix_step, suffix_step
+          )
+          page = add_page_at(unique_name(name), insert_index)
           created << page.name
           insert_index += 1 if insert_index
         end
@@ -111,17 +123,16 @@ module ScenePropagator
     end
 
     # Renames an ordered list of existing scenes (by current name) using the
-    # same indexed prefix/base/suffix scheme as create_scenes. Scenes are
-    # renamed in the order given in names_in_order.
+    # same naming scheme as create_scenes. Scenes are renamed in the order
+    # given in names_in_order.
     #
     # Returns the array of new names, in the same order.
-    def rename_scenes_bulk(names_in_order:, base_name: '', prefix: '', suffix: '', start_index: 1)
+    def rename_scenes_bulk(names_in_order:, base_name: '', prefix: '', suffix: '',
+                            prefix_index: '', suffix_index: '',
+                            prefix_increment: true, suffix_increment: true,
+                            prefix_step: 1, suffix_step: 1)
       pages_to_rename = Array(names_in_order).map { |n| find_page(n) }.compact
       raise ArgumentError, "No scenes selected" if pages_to_rename.empty?
-
-      start_index = start_index.to_i
-      start_index = 1 if start_index < 1
-      pad_width = [2, (start_index + pages_to_rename.size - 1).to_s.length].max
 
       # Names not part of this batch must never collide with the new names.
       used = (@pages.to_a - pages_to_rename).map(&:name)
@@ -130,8 +141,10 @@ module ScenePropagator
       @model.start_operation('Rename Scenes (batch)', true)
       begin
         pages_to_rename.each_with_index do |page, i|
-          idx = start_index + i
-          candidate = format_indexed_name(prefix, base_name, suffix, idx, pad_width)
+          candidate = compose_name(
+            prefix, prefix_index, base_name, suffix, suffix_index,
+            i, prefix_increment, suffix_increment, prefix_step, suffix_step
+          )
           final = unique_name_against(candidate, used)
           page.name = final
           used << final
@@ -207,15 +220,27 @@ module ScenePropagator
       @pages.add(name)
     end
 
-    def format_indexed_name(prefix, base, suffix, index, pad_width)
-      prefix = prefix.to_s
-      base   = base.to_s
-      suffix = suffix.to_s
-      padded = index.to_s.rjust(pad_width, '0')
+    # Builds the i-th name: prefix + prefix_index + base + suffix + suffix_index
+    def compose_name(prefix, prefix_index, base, suffix, suffix_index,
+                     i, prefix_incr, suffix_incr, prefix_step, suffix_step)
+      p_idx = indexed_value(prefix_index, prefix_incr, prefix_step, i)
+      s_idx = indexed_value(suffix_index, suffix_incr, suffix_step, i)
+      name = "#{prefix}#{p_idx}#{base}#{suffix}#{s_idx}"
+      name.empty? ? "Scene#{i + 1}" : name
+    end
 
-      return "Scene#{padded}" if prefix.empty? && base.empty? && suffix.empty?
+    # Computes the i-th value of an index field.
+    # The literal text defines the zero-padding: "0" -> 0,1,2 ; "01" -> 01,02.
+    # A non-numeric or empty value is used as-is (no increment possible).
+    def indexed_value(start_text, increment, step, i)
+      s = start_text.to_s.strip
+      return '' if s.empty?
+      return s unless increment && s =~ /\A\d+\z/
 
-      "#{prefix}#{padded}#{base}#{suffix}#{padded}"
+      step = step.to_i
+      step = 1 if step < 1
+      width = s.length
+      (s.to_i + i * step).to_s.rjust(width, '0')
     end
 
     def unique_name(name)

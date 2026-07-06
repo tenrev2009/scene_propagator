@@ -25,9 +25,14 @@ const SPBridge = (() => {
         rename_btn: "Rename",
         rename_placeholder: "New name...",
         create_label: "Create new scenes",
-        create_base: "Base name (e.g. -)",
-        create_prefix: "Prefix",
-        create_suffix: "Suffix",
+        field_name: "Scene name",
+        field_prefix: "Prefix (text)",
+        field_suffix: "Suffix (text)",
+        field_prefix_index: "Prefix index",
+        field_suffix_index: "Suffix index",
+        field_increment: "Increment",
+        field_step: "Step",
+        field_count: "Quantity",
         copy_source: "Copy properties from a source scene",
         create_btn: "Create scenes",
         insert_after: "Insert after",
@@ -62,9 +67,14 @@ const SPBridge = (() => {
         rename_btn: "Renommer",
         rename_placeholder: "Nouveau nom...",
         create_label: "Créer de nouvelles scènes",
-        create_base: "Nom de base (ex: -)",
-        create_prefix: "Préfixe",
-        create_suffix: "Suffixe",
+        field_name: "Nom de la scène",
+        field_prefix: "Préfixe (texte)",
+        field_suffix: "Suffixe (texte)",
+        field_prefix_index: "Indice préfixe",
+        field_suffix_index: "Indice suffixe",
+        field_increment: "Incrémenter",
+        field_step: "Pas",
+        field_count: "Quantité",
         copy_source: "Copier les propriétés d'une scène source",
         create_btn: "Créer les scènes",
         insert_after: "Insérer après",
@@ -104,12 +114,36 @@ const SPBridge = (() => {
     document.getElementById('rename-input').placeholder = translations.rename_placeholder || 'New name...';
     document.getElementById('rename-btn').textContent = `✏️ ${translations.rename_btn || 'Rename'}`;
     document.getElementById('label-create').textContent = translations.create_label || 'Create new scenes';
-    document.getElementById('create-base').placeholder = translations.create_base || 'Base name (optional)';
-    document.getElementById('create-prefix').placeholder = translations.create_prefix || 'Prefix';
-    document.getElementById('create-suffix').placeholder = translations.create_suffix || 'Suffix';
     document.getElementById('label-copy-source').textContent = translations.copy_source || 'Copy properties from a source scene';
     document.getElementById('create-btn').textContent = `➕ ${translations.create_btn || 'Create scenes'}`;
     document.getElementById('label-insert-after').textContent = translations.insert_after || 'Insert after';
+
+    // Field labels (shown above each input, shared between create and bulk rename)
+    const fieldLabels = {
+      'lbl-create-name': translations.field_name || 'Scene name',
+      'lbl-create-count': translations.field_count || 'Quantity',
+      'lbl-create-prefix': translations.field_prefix || 'Prefix (text)',
+      'lbl-create-prefix-index': translations.field_prefix_index || 'Prefix index',
+      'lbl-create-prefix-incr': translations.field_increment || 'Increment',
+      'lbl-create-prefix-step': translations.field_step || 'Step',
+      'lbl-create-suffix': translations.field_suffix || 'Suffix (text)',
+      'lbl-create-suffix-index': translations.field_suffix_index || 'Suffix index',
+      'lbl-create-suffix-incr': translations.field_increment || 'Increment',
+      'lbl-create-suffix-step': translations.field_step || 'Step',
+      'lbl-bulk-name': translations.field_name || 'Scene name',
+      'lbl-bulk-prefix': translations.field_prefix || 'Prefix (text)',
+      'lbl-bulk-prefix-index': translations.field_prefix_index || 'Prefix index',
+      'lbl-bulk-prefix-incr': translations.field_increment || 'Increment',
+      'lbl-bulk-prefix-step': translations.field_step || 'Step',
+      'lbl-bulk-suffix': translations.field_suffix || 'Suffix (text)',
+      'lbl-bulk-suffix-index': translations.field_suffix_index || 'Suffix index',
+      'lbl-bulk-suffix-incr': translations.field_increment || 'Increment',
+      'lbl-bulk-suffix-step': translations.field_step || 'Step'
+    };
+    Object.entries(fieldLabels).forEach(([id, text]) => {
+      const el = document.getElementById(id);
+      if (el) { el.textContent = text; }
+    });
 
     document.getElementById('label-bulk-rename').textContent = translations.bulk_rename_label || 'Rename selected scenes (checked above)';
     document.getElementById('bulk-rename-btn').textContent = `🔁 ${translations.bulk_rename_btn || 'Rename selection'}`;
@@ -251,38 +285,51 @@ const SPBridge = (() => {
     });
   }
 
-  // ==== Indexed naming scheme: prefix + index + base + suffix + index ====
-  // Mirrors ScenePropagator::SceneManager#format_indexed_name (Ruby side).
+  // ==== Naming scheme: prefix + prefixIndex + name + suffix + suffixIndex ====
+  // Mirrors ScenePropagator::SceneManager#compose_name (Ruby side).
+  // The literal index text defines the padding: "0" -> 0,1,2 ; "01" -> 01,02.
   // Only used here for a live preview; the server resolves real uniqueness.
-  function padWidthFor(startIndex, count) {
-    const maxIdx = startIndex + Math.max(count, 1) - 1;
-    return Math.max(2, String(maxIdx).length);
+  function indexedValue(startText, increment, step, i) {
+    const s = String(startText || '').trim();
+    if (!s) { return ''; }
+    if (!increment || !/^\d+$/.test(s)) { return s; }
+    const st = Math.max(1, parseInt(step, 10) || 1);
+    return String(parseInt(s, 10) + i * st).padStart(s.length, '0');
   }
 
-  function formatIndexedName(prefix, base, suffix, index, padW) {
-    const padded = String(index).padStart(padW, '0');
-    if (!prefix && !base && !suffix) {
-      return `Scene${padded}`;
-    }
-    return `${prefix}${padded}${base}${suffix}${padded}`;
+  function readNamingFields(idPrefix) {
+    return {
+      base: document.getElementById(`${idPrefix}-base`).value,
+      prefix: document.getElementById(`${idPrefix}-prefix`).value,
+      suffix: document.getElementById(`${idPrefix}-suffix`).value,
+      prefixIndex: document.getElementById(`${idPrefix}-prefix-index`).value,
+      suffixIndex: document.getElementById(`${idPrefix}-suffix-index`).value,
+      prefixIncr: document.getElementById(`${idPrefix}-prefix-incr`).checked,
+      suffixIncr: document.getElementById(`${idPrefix}-suffix-incr`).checked,
+      prefixStep: parseInt(document.getElementById(`${idPrefix}-prefix-step`).value, 10) || 1,
+      suffixStep: parseInt(document.getElementById(`${idPrefix}-suffix-step`).value, 10) || 1
+    };
   }
 
-  function computePreview(prefix, base, suffix, startIndex, count) {
+  function composeName(f, i) {
+    const pIdx = indexedValue(f.prefixIndex, f.prefixIncr, f.prefixStep, i);
+    const sIdx = indexedValue(f.suffixIndex, f.suffixIncr, f.suffixStep, i);
+    const name = `${f.prefix}${pIdx}${f.base}${f.suffix}${sIdx}`;
+    return name || `Scene${i + 1}`;
+  }
+
+  function computePreview(f, count) {
     if (count < 1) { return ''; }
-    const padW = padWidthFor(startIndex, count);
-    const first = formatIndexedName(prefix, base, suffix, startIndex, padW);
+    const first = composeName(f, 0);
     if (count === 1) { return first; }
-    const last = formatIndexedName(prefix, base, suffix, startIndex + count - 1, padW);
-    return `${first} → ${last}`;
+    if (count === 2) { return `${first}, ${composeName(f, 1)}`; }
+    return `${first}, ${composeName(f, 1)}, … ${composeName(f, count - 1)}`;
   }
 
   function updateCreatePreview() {
-    const prefix = document.getElementById('create-prefix').value;
-    const base = document.getElementById('create-base').value;
-    const suffix = document.getElementById('create-suffix').value;
-    const startIndex = parseInt(document.getElementById('create-start-index').value, 10) || 1;
+    const f = readNamingFields('create');
     const count = parseInt(document.getElementById('create-count').value, 10) || 1;
-    const preview = computePreview(prefix, base, suffix, startIndex, count);
+    const preview = computePreview(f, count);
     document.getElementById('create-preview').textContent = (translations.preview_prefix || 'Preview: ') + preview;
   }
 
@@ -293,12 +340,8 @@ const SPBridge = (() => {
       el.textContent = translations.bulk_rename_none || 'No scene selected';
       return;
     }
-    const prefix = document.getElementById('bulk-prefix').value;
-    const base = document.getElementById('bulk-base').value;
-    const suffix = document.getElementById('bulk-suffix').value;
-    const startIndex = parseInt(document.getElementById('bulk-start-index').value, 10) || 1;
-    const preview = computePreview(prefix, base, suffix, startIndex, count);
-    el.textContent = (translations.preview_prefix || 'Preview: ') + preview;
+    const f = readNamingFields('bulk');
+    el.textContent = (translations.preview_prefix || 'Preview: ') + computePreview(f, count);
   }
 
   // ==== CSV helpers ====
@@ -333,12 +376,18 @@ const SPBridge = (() => {
 
     // Create scenes
     document.getElementById('create-btn').addEventListener('click', () => {
+      const f = readNamingFields('create');
       const payload = {
-        base_name: document.getElementById('create-base').value,
-        prefix: document.getElementById('create-prefix').value,
-        suffix: document.getElementById('create-suffix').value,
+        base_name: f.base,
+        prefix: f.prefix,
+        suffix: f.suffix,
+        prefix_index: f.prefixIndex,
+        suffix_index: f.suffixIndex,
+        prefix_increment: f.prefixIncr,
+        suffix_increment: f.suffixIncr,
+        prefix_step: f.prefixStep,
+        suffix_step: f.suffixStep,
         count: parseInt(document.getElementById('create-count').value, 10) || 1,
-        start_index: parseInt(document.getElementById('create-start-index').value, 10) || 1,
         insert_after: document.getElementById('create-insert-after').value || null,
         copy_source: copyCheckbox.checked,
         source: createSource.value
@@ -348,8 +397,13 @@ const SPBridge = (() => {
       }
     });
 
-    ['create-prefix', 'create-base', 'create-suffix', 'create-count', 'create-start-index'].forEach(id => {
+    ['create-base', 'create-prefix', 'create-suffix', 'create-prefix-index',
+     'create-suffix-index', 'create-prefix-step', 'create-suffix-step',
+     'create-count'].forEach(id => {
       document.getElementById(id).addEventListener('input', updateCreatePreview);
+    });
+    ['create-prefix-incr', 'create-suffix-incr'].forEach(id => {
+      document.getElementById(id).addEventListener('change', updateCreatePreview);
     });
     updateCreatePreview();
 
@@ -357,20 +411,30 @@ const SPBridge = (() => {
     document.getElementById('bulk-rename-btn').addEventListener('click', () => {
       const names = getSelectedTargets();
       if (names.length === 0) { return; }
+      const f = readNamingFields('bulk');
       const payload = {
         names,
-        base_name: document.getElementById('bulk-base').value,
-        prefix: document.getElementById('bulk-prefix').value,
-        suffix: document.getElementById('bulk-suffix').value,
-        start_index: parseInt(document.getElementById('bulk-start-index').value, 10) || 1
+        base_name: f.base,
+        prefix: f.prefix,
+        suffix: f.suffix,
+        prefix_index: f.prefixIndex,
+        suffix_index: f.suffixIndex,
+        prefix_increment: f.prefixIncr,
+        suffix_increment: f.suffixIncr,
+        prefix_step: f.prefixStep,
+        suffix_step: f.suffixStep
       };
       if (window.sketchup && window.sketchup.sp_rename_scenes_bulk) {
         window.sketchup.sp_rename_scenes_bulk(JSON.stringify(payload));
       }
     });
 
-    ['bulk-prefix', 'bulk-base', 'bulk-suffix', 'bulk-start-index'].forEach(id => {
+    ['bulk-base', 'bulk-prefix', 'bulk-suffix', 'bulk-prefix-index',
+     'bulk-suffix-index', 'bulk-prefix-step', 'bulk-suffix-step'].forEach(id => {
       document.getElementById(id).addEventListener('input', updateBulkPreview);
+    });
+    ['bulk-prefix-incr', 'bulk-suffix-incr'].forEach(id => {
+      document.getElementById(id).addEventListener('change', updateBulkPreview);
     });
     document.getElementById('scene-list').addEventListener('change', updateBulkPreview);
     document.getElementById('select-all').addEventListener('click', updateBulkPreview);
