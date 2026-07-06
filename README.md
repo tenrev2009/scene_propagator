@@ -18,7 +18,7 @@ Contrairement à l'outil natif, cette extension permet une **propagation granula
 - **Gestion des scènes :**
   - ✏️ **Renommer** une scène existante directement depuis l'interface.
   - ➕ **Créer** de nouvelles scènes en lot (nombre désiré), avec insertion possible **après une scène existante au choix**.
-  - 🔢 **Nommage indexé** : préfixe + indice + nom de base + suffixe + indice (ex : base `-`, préfixe `toto`, suffixe `c` → `toto01-c01`, `toto02-c02`…), avec indice de départ personnalisable.
+  - 🔢 **Nommage indexé** : `préfixe + indice préfixe + nom + suffixe + indice suffixe` (ex : nom `toto`, préfixe `cc`, suffixe `dd`, indices `01` → `cc01totodd01`, `cc02totodd02`…). Le format saisi définit le remplissage (`0` → 0,1,2… ; `01` → 01,02,03…), chaque indice peut être incrémenté ou fixe, avec un pas réglable (1, 2, …).
   - 🎯 Les nouvelles scènes peuvent **hériter des propriétés d'une scène source** (caméra, style, ombres, calques…).
   - 🔁 **Renommage en groupe** des scènes cochées, suivant la même logique de nommage indexé.
   - 📄 **Export/Import CSV** des noms de scènes : exportez l'ordre actuel, ou importez un fichier pour remplacer les noms existants (avec avertissement si le nombre de lignes ne correspond pas).

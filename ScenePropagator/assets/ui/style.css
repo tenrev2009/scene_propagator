@@ -116,6 +116,52 @@ button:hover {
   font-size: 12px;
 }
 
+.field-row {
+  display: flex;
+  gap: 0.5em;
+  align-items: flex-end;
+  margin-bottom: 0.5em;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.field.small {
+  flex: 0 0 90px;
+}
+
+.field.tiny {
+  flex: 0 0 62px;
+}
+
+.field-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 0.2em;
+  white-space: nowrap;
+}
+
+.field input[type="text"],
+.field input[type="number"],
+.field select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.4em;
+  margin-bottom: 0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.field input[type="checkbox"] {
+  height: 1.9em;
+  margin: 0;
+}
+
 .preview-text {
   font-family: monospace;
   font-size: 12px;
