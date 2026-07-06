@@ -6,7 +6,7 @@ module ScenePropagator
   unless file_loaded?(__FILE__)
     PLUGIN_ID = 'scene_propagator'.freeze
     PLUGIN_NAME = 'Scene Propagator'.freeze
-    PLUGIN_VERSION = '1.0.1'.freeze
+    PLUGIN_VERSION = '1.1.0'.freeze
     PLUGIN_AUTHOR = 'tenrev - biblio3d'
     PLUGIN_URL = 'https://www.biblio3d.com'
 
